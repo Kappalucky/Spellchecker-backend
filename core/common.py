@@ -11,57 +11,48 @@ from django.conf import settings
 #* Dictionary file location
 file_path = '%s/dictionary.txt' % (settings.STATIC_ROOT)
 
+def init_dictionary(path):
+	try:
+		file = open(path, 'r')
+		words = file.readlines()
+		dictionary = [dict_word.strip() for dict_word in words]
+		file.close()
+
+		return dictionary
+	except:
+		raise Exception('Unable to open file')
+
 def rule_checker(user_word):
-	#* No repeated Characters
 	'''Check if letter in word repeats consecutively 3 or more times'''
-	regex = r'([a-zA-Z])\1{2,}'
-	search = re.findall(regex, user_word, re.I)
-	if len(search) != 0:
-		print('Multiple characters present')
+	if len(re.findall(r'([a-zA-Z])\1{2,}', user_word, re.I)) != 0:
 		raise Exception('Multiple characters present')
 
-	#* lowercase or uppercase true
 	'''check if islower/upper is true, return true'''
 	if user_word.isupper() or user_word.islower():
-		print('Word is either uppercase or lowercase')
 		return True
 	else:
-		#* mixed case can still check for the word
-		'''if other methods did not fail, continue/ return false'''
-		print('Multicase')
+		#* Mixed cased word will still be checked, missing vowels will be treated as misspelled word
 		return False
 
-	#* No missing vowels
-	'''Check word against words without vowels, if match, return true. else return exception'''
-
 def get_word(user_word):
-	#* Check if list/hashtable is empty
-
-	#* add words from dictionary to list/hastable if not in memory
-	file = open(file_path, 'r')
-	words = file.readlines()
-	dictionary = [dict_word.strip() for dict_word in words]
-
-	vowel_free_words = []
 	suggestions = []
+	user_word_lower = user_word.lower()
+	dictionary = init_dictionary(file_path)
+	rule_checker_status = rule_checker(user_word)
 
-	#* check if word passes rule checker function
-	#* Rule checker returns True
-	if rule_checker(user_word):
-		if user_word in dictionary:
-			return {'correct': rule_checker(user_word), 'suggestions': suggestions}
+	if rule_checker_status == True:
+		if user_word_lower in dictionary:
+			return {'correct': rule_checker_status, 'suggestions': suggestions}
+		raise Exception('Word not in dictionary')
+	else:
+		if user_word_lower in dictionary:
+			suggestions.append(user_word_lower)
 		else:
 			raise Exception('Word not in dictionary')
-	else:
-		#* change word to lowercase
-		#* check list for word, if present add to array
-		if user_word.lower() in dictionary:
-			suggestions.append(user_word.lower())
 
 		#* check if other words in array that match word and not the same length, add to array
 		for word in dictionary:
-			if user_word.lower()[:len(user_word)] in word[:len(user_word)] and len(user_word) != len(word):
+			if user_word_lower[:len(user_word_lower)] in word[:len(user_word_lower)] and len(user_word_lower) != len(word):
 				suggestions.append(word)
-				print(suggestions)
 
-		return {'correct': rule_checker(user_word), 'suggestions': suggestions}
+		return {'correct': rule_checker_status, 'suggestions': suggestions}

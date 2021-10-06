@@ -15,9 +15,9 @@ from .common import get_word
 class Spellcheck(APIView):
 	"""HTTP get request to evaluate passed query"""
 
-	def get(self, request):
+	def post(self, request):
 		"""Returns spellcheck result"""
-		word = request.query_params['word']
+		word = request.data['word']
 
 		try:
 			function_response = get_word(word)
