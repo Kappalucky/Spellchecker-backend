@@ -46,6 +46,7 @@ def get_word(user_word):
 	suggestions = []
 
 	#* check if word passes rule checker function
+	#* Rule checker returns True
 	if rule_checker(user_word):
 		if user_word in dictionary:
 			return {'correct': rule_checker(user_word), 'suggestions': suggestions}
@@ -59,7 +60,7 @@ def get_word(user_word):
 
 		#* check if other words in array that match word and not the same length, add to array
 		for word in dictionary:
-			if user_word.lower() in word and len(user_word) != len(word):
+			if user_word.lower()[:len(user_word)] in word[:len(user_word)] and len(user_word) != len(word):
 				suggestions.append(word)
 				print(suggestions)
 
