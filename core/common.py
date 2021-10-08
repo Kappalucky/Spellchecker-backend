@@ -8,51 +8,92 @@ from django.conf import settings
 
 # 3rd party apps
 # Local app imports
-#* Dictionary file location
-file_path = '%s/dictionary.txt' % (settings.STATIC_ROOT)
 
-def init_dictionary(path):
-	try:
-		file = open(path, 'r')
-		words = file.readlines()
-		dictionary = [dict_word.strip() for dict_word in words]
-		file.close()
+# * Dictionary file location
+file_path = "%s/dictionary.txt" % (settings.STATIC_ROOT)
 
-		return dictionary
-	except:
-		raise Exception('Unable to open file')
 
-def rule_checker(user_word):
-	'''Check if letter in word repeats consecutively 3 or more times'''
-	if len(re.findall(r'([a-zA-Z])\1{2,}', user_word, re.I)) != 0:
-		raise Exception('Multiple characters present')
+def init_data(path) -> list:
+    try:
+        file = open(path, "r")
+        words = file.readlines()
+        file.close()
 
-	'''check if islower/upper is true, return true'''
-	if user_word.isupper() or user_word.islower():
-		return True
-	else:
-		#* Mixed cased word will still be checked, missing vowels will be treated as misspelled word
-		return False
+        return words
+    except:
+        raise Exception("Unable to open file")
 
-def get_word(user_word):
-	suggestions = []
-	user_word_lower = user_word.lower()
-	dictionary = init_dictionary(file_path)
-	rule_checker_status = rule_checker(user_word)
 
-	if rule_checker_status == True:
-		if user_word_lower in dictionary:
-			return {'correct': rule_checker_status, 'suggestions': suggestions}
-		raise Exception('Word not in dictionary')
-	else:
-		if user_word_lower in dictionary:
-			suggestions.append(user_word_lower)
-		else:
-			raise Exception('Word not in dictionary')
+def init_hash_table(data) -> dict:
+    table = {}
 
-		#* check if other words in array that match word and not the same length, add to array
-		for word in dictionary:
-			if user_word_lower[:len(user_word_lower)] in word[:len(user_word_lower)] and len(user_word_lower) != len(word):
-				suggestions.append(word)
+    for item in data:
+        table[item.strip()] = True
 
-		return {'correct': rule_checker_status, 'suggestions': suggestions}
+    return table
+
+
+def init_dictionary(data) -> list:
+    return [word.strip() for word in data]
+
+
+def hash_table_checker(table, word) -> bool:
+    word_lower = word.lower()
+    status = table.get(word_lower)
+
+    if status is not None:
+        return status
+    else:
+        return False
+
+
+def dictionary_checker(dict, word) -> list:
+    suggestions = []
+    word_lower = word.lower()
+
+    for dict_word in dict:
+        if word_lower[: len(word_lower)] in dict_word[: len(word_lower)]:
+            suggestions.append(dict_word)
+
+    return suggestions
+
+
+def rule_checker(word) -> bool:
+    """Check if letter in word repeats consecutively 3 or more times"""
+    if len(re.findall(r"([a-zA-Z])\1{2,}", word, re.I)) != 0:
+        raise Exception("Multiple characters present")
+
+    """check if islower/upper is true, return true"""
+    if word.isupper() or word.islower():
+        return True
+
+    # * Mixed cased word will still be checked, missing vowels will be treated as misspelled word
+    return False
+
+
+def get_word(word) -> dict:
+    dictionary = init_dictionary(init_data(file_path))
+    hash_table = init_hash_table(dictionary)
+    rule_checker_status = rule_checker(word)
+    hash_status = hash_table_checker(hash_table, word)
+
+    if rule_checker_status:  # * Rules passed
+        if hash_status:
+            return {"correct": hash_status, "suggestions": []}
+        # * return words similar to passed word
+        elif hash_status == False and len(dictionary_checker(dictionary, word)) != 0:
+            return {
+                "correct": hash_status,
+                "suggestions": dictionary_checker(dictionary, word),
+            }
+        # * No word or words of similarity present
+        raise Exception("Word not in dictionary")
+    else:  # * A rule failed
+        # * No words of similarity present
+        if len(dictionary_checker(dictionary, word)) == 0:
+            raise Exception("Word not in dictionary")
+        # * return words similar to passed word
+        return {
+            "correct": rule_checker_status,
+            "suggestions": dictionary_checker(dictionary, word),
+        }

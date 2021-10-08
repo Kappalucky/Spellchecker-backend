@@ -8,9 +8,8 @@ from django.urls import path
 # Local app imports
 from .views import Spellcheck
 
-app_name = 'core'
+app_name = "core"
 
 urlpatterns = [
-	path('spellcheck/', Spellcheck.as_view(),
-         name='spellcheck'),
+    path("spellcheck/", Spellcheck.as_view(), name="spellcheck"),
 ]
