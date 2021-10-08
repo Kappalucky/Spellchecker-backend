@@ -8,6 +8,9 @@ def main():
     """Run administrative tasks."""
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "spellchecker.settings.base")
     try:
+        #* Updates default port
+        from django.core.management.commands.runserver import Command as runserver
+        runserver.default_port = "31337"
         from django.core.management import execute_from_command_line
     except ImportError as exc:
         raise ImportError(
